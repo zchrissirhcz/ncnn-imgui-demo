@@ -345,7 +345,7 @@ static int detect_yolox(const cv::Mat& bgr, std::vector<Object>& objects)
     return 0;
 }
 
-static void draw_objects(const cv::Mat& bgr, const std::vector<Object>& objects)
+cv::Mat draw_objects(const cv::Mat& bgr, const std::vector<Object>& objects)
 {
     static const char* class_names[] = {
         "person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "traffic light",
@@ -390,23 +390,23 @@ static void draw_objects(const cv::Mat& bgr, const std::vector<Object>& objects)
                     cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 0));
     }
 
-    cv::imshow("image", image);
-    cv::waitKey(0);
+    // cv::imshow("image", image);
+    // cv::waitKey(0);
+    return image;
 }
 
-int ncnn_yolox_main(const char* imagepath)
+cv::Mat ncnn_yolox_main(const char* imagepath)
 {
     cv::Mat m = cv::imread(imagepath, 1);
     if (m.empty())
     {
         fprintf(stderr, "cv::imread %s failed\n", imagepath);
-        return -1;
+        return cv::Mat();
     }
 
     std::vector<Object> objects;
     detect_yolox(m, objects);
 
-    draw_objects(m, objects);
-
-    return 0;
+    cv::Mat result = draw_objects(m, objects);
+    return result;
 }

@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 project(ncnn_imgui_demo)
 
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include("cmake/output_dir.cmake")
@@ -8,7 +9,10 @@ include("cmake/deps.cmake")
 
 add_executable(ncnn_imgui_demo
   ${CMAKE_SOURCE_DIR}/app.cpp
+  ${CMAKE_SOURCE_DIR}/image_render.cpp
+  ${CMAKE_SOURCE_DIR}/image_io.cpp
   ${CMAKE_SOURCE_DIR}/ncnn_yolox.cpp
+  
 
   ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp
   ${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp

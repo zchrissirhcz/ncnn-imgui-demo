@@ -1,11 +1,6 @@
 #pragma once
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <opencv2/opencv.hpp>
 
-int ncnn_yolox_main(const char* imagepath);
+cv::Mat ncnn_yolox_main(const char* imagepath);
 
-#ifdef __cplusplus
-}
-#endif
