@@ -1,5 +1,3 @@
-#define GL_SILENCE_DEPRECATION
-
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
@@ -16,6 +14,7 @@
 #include "app_design.hpp"
 #include "ncnn_yolox.hpp"
 
+#include "portable-file-dialogs.h"
 #include "image_render.hpp"
 
 #define STR_IMPLEMENTATION
@@ -30,6 +29,8 @@ public:
     MyApp() = default;
     ~MyApp() = default;
 
+    void myUpdateMouseWheel();
+
     void StartUp()
     {
         // Title
@@ -39,6 +40,8 @@ public:
 
     void Update()
     {
+        myUpdateMouseWheel();
+
         static bool use_work_area = true;
         static ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollWithMouse;
         
@@ -50,28 +53,97 @@ public:
 
 
         ImGui::Begin("Hello, ncnn! Hello, imgui!", NULL, flags);
-        
-        if (ImGui::Button("ncnn-yolox-run"))
+
+        // if (ImGui::Button("ncnn-yolox-run"))
+        // {
+        //     LoadImage(input_image);
+        // }
+
+        // if (ImGui::Button("directly run"))
+        // {
+        //     const char* image_path = "frontground.png";
+        //     cv::Mat result = ncnn_yolox_main(image_path);
+        //     result_image.load_mat(result);
+        // }
+
+
+        if (ImGui::Button("load image"))
         {
-            const char* image_path = "/Users/zz/data/frontground.png";
-            cv::Mat result = ncnn_yolox_main(image_path);
-            cv::Mat src = cv::imread(image_path);
-            rich_image.load_mat(result);
+            LoadImage(input_image);
+        }
+        ImGui::Checkbox("show input", &show_input);
+        if (show_input && !input_image.mat.empty())
+        {
+            ShowImage("input", input_image.get_open(), input_image, 1.0f);
         }
 
-        if (!rich_image.mat.empty())
+
+        if (ImGui::Button("run ncnn yolox"))
         {
-            ImGui::Text("got result!");
-            ShowImage("result", rich_image.get_open(), rich_image, 1.0f);
+            if (input_image.mat.empty())
+            {
+                const char* image_path = "frontground.png";
+                cv::Mat result = ncnn_yolox_main(image_path);
+                result_image.load_mat(result);
+            }
+            else
+            {
+                cv::Mat result = ncnn_yolox_main(input_image.get_name());
+                result_image.load_mat(result);
+            }
+        }
+        ImGui::Checkbox("show result", &show_result);
+        if (!result_image.mat.empty())
+        {
+            //ImGui::Text("got result!");
+            ShowImage("result", result_image.get_open(), result_image, 1.0f);
         }
 
         ImGui::End();
     }
+
+public:
+    void InitFileFilters();
+
 private:
-    RichImage rich_image;
+    int UI_ChooseImageFile();
+    void LoadImage(RichImage& image);
+
+    RichImage input_image;
+    RichImage result_image;
+    Str256 filepath;
     void ShowImage(const char* windowName, bool* open, const RichImage& image, float align_to_right_ratio = 0.f);
     int zoom_percent = 46;
+    int zoom_percent_min = 10;
+    int zoom_percent_max = 1000;
+    std::string filter_msg1 = "Image Files (";
+    std::string filter_msg2 = "";
+
+    bool show_input = true;
+    bool show_result = true;
 };
+
+
+void MyApp::InitFileFilters()
+{
+    filter_msg1 = "Image Files (";
+    filter_msg2 = "";
+    std::vector<std::string> exts = {".jpg", ".jpeg", ".png", ".bmp"};
+    for (int i = 0; i < exts.size(); i++)
+    {
+        if (i > 0)
+        {
+            filter_msg1 += " ." + exts[i];
+            filter_msg2 += " *." + exts[i];
+        }
+        else
+        {
+            filter_msg1 += "." + exts[i];
+            filter_msg2 += "*." + exts[i];
+        }
+    }
+    filter_msg1 += ")";
+}
 
 void MyApp::ShowImage(const char* windowName, bool* open, const RichImage& image, float align_to_right_ratio)
 {
@@ -144,6 +216,102 @@ void MyApp::ShowImage(const char* windowName, bool* open, const RichImage& image
     }
 }
 
+static const float WINDOWS_MOUSE_WHEEL_SCROLL_LOCK_TIMER = 2.00f; // Lock scrolled window (so it doesn't pick child windows that are scrolling through) for a certain time, unless mouse moved.
+
+static void StartLockWheelingWindow(ImGuiWindow* window)
+{
+    ImGuiContext& g = *GImGui;
+    if (g.WheelingWindow == window)
+        return;
+    g.WheelingWindow = window;
+    g.WheelingWindowRefMousePos = g.IO.MousePos;
+    g.WheelingWindowTimer = WINDOWS_MOUSE_WHEEL_SCROLL_LOCK_TIMER;
+}
+
+// When with mouse wheel moving (vertically), and current window name contains 'Image', resize current window's size
+void MyApp::myUpdateMouseWheel()
+{
+    ImGuiContext& g = *GImGui;
+
+    ImGuiWindow* cur_window = g.WheelingWindow;
+
+    // Reset the locked window if we move the mouse or after the timer elapses
+    if (cur_window != NULL)
+    {
+        g.WheelingWindowTimer -= g.IO.DeltaTime;
+        if (ImGui::IsMousePosValid() && ImLengthSqr(g.IO.MousePos - g.WheelingWindowRefMousePos) > g.IO.MouseDragThreshold * g.IO.MouseDragThreshold)
+            g.WheelingWindowTimer = 0.0f;
+        if (g.WheelingWindowTimer <= 0.0f)
+        {
+            g.WheelingWindow = NULL;
+            g.WheelingWindowTimer = 0.0f;
+        }
+    }
+
+    float wheel_y = g.IO.MouseWheel;
+
+    if ((g.ActiveId != 0 && g.ActiveIdUsingMouseWheel) || (g.HoveredIdPreviousFrame != 0 && g.HoveredIdPreviousFrameUsingMouseWheel))
+        return;
+
+    ImGuiWindow* window = g.WheelingWindow ? g.WheelingWindow : g.HoveredWindow;
+    if (!window || window->Collapsed)
+        return;
+
+    if (wheel_y != 0.0f)
+    {
+        StartLockWheelingWindow(window);
+
+        zoom_percent = zoom_percent + g.IO.MouseWheel * 5;
+        if (zoom_percent > zoom_percent_max)
+        {
+            zoom_percent = zoom_percent_max;
+        }
+        else if (zoom_percent < zoom_percent_min)
+        {
+            zoom_percent = zoom_percent_min;
+        }
+
+        return;
+    }
+}
+
+int MyApp::UI_ChooseImageFile()
+{
+    // Check that a backend is available
+    if (!pfd::settings::available())
+    {
+        std::cout << "Portable File Dialogs are not available on this platform.\n";
+        return 1;
+    }
+
+    // Set verbosity to true
+    pfd::settings::verbose(true);
+
+    // NOTE: file extension filter not working on macOSX
+    auto f = pfd::open_file("Choose image file", pfd::path::home(),
+                            //{"Image Files (.jpg .png .jpeg .bmp .nv21 .nv12 .rgb24 .bgr24)", "*.jpg *.png *.jpeg *.bmp *.nv21 *.nv12 *.rgb24 *.bgr24",
+                            {filter_msg1, filter_msg2, "All Files", "*"}
+                            //pfd::opt::multiselect
+    );
+    if (f.result().size() > 0)
+    {
+        std::cout << "Selected files:";
+        std::cout << f.result()[0] << std::endl;
+
+        filepath.setf("%s", f.result()[0].c_str());
+    }
+    return 0;
+}
+
+void MyApp::LoadImage(RichImage& image)
+{
+    UI_ChooseImageFile();
+    if (filepath.c_str())
+    {
+        image.load_from_file(filepath);
+    }
+    filepath = NULL;
+}
 
 int main()
 {

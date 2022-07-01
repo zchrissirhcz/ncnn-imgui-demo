@@ -30,10 +30,18 @@ target_link_libraries(ncnn_imgui_demo
   portable_file_dialogs
 )
 
+if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
+  add_definitions(-DGL_SILENCE_DEPRECATION)
+endif()
+
+message(STATUS "OPENGL_LIBRARIES: ${OPENGL_LIBRARIES}")
+
 # copy ncnn model files
 add_custom_command(TARGET ncnn_imgui_demo
   POST_BUILD
 
   COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/assets/yolox.bin ${CMAKE_BINARY_DIR}/
   COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/assets/yolox.param ${CMAKE_BINARY_DIR}/
+
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/assets/frontground.png ${CMAKE_BINARY_DIR}/
 )
