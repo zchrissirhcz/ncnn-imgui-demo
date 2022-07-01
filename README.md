@@ -1,9 +1,11 @@
 # ncnn-imgui-demo
 
 ## Intro
-This project demonstrates the combination of [ncnn](https://github.com/tencent/ncnn) and [imgui](https://github.com/ocornut/imgui).
+Lightweight (n)cnn inference GUI program example with the combination of [ncnn](https://github.com/tencent/ncnn) and [imgui](https://github.com/ocornut/imgui).
 
-This may help people visually inspecting the result of an (n)cnn model inference when its input and output are images.
+This may help people:
+- Visually inspecting the result of an (n)cnn model inference when its input and output are images
+- Replace the heavy, *license-not-friendly* Qt
 
 ## Screenshot
 ![](./assets/screenshots/2022-07-02.png)
