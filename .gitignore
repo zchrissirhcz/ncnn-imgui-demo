@@ -1,0 +1,45 @@
+# All sub directories under build
+**/build/*/
+
+# IDE generated folder
+.vscode/settings.json
+.idea/
+cmake-build-debug/
+cmake-build-release/
+
+# clangd cache
+**/.cache/
+
+# c/c++ object files
+*.o
+*.out
+
+# debug symbol file
+*.out.dSYM
+*.pdb
+
+# python Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# tex
+*.aux
+*.log
+*.synctex.gz
+*.toc
+
+# log files
+build/log.txt
+
+# gdb
+.gdb_history
+
+# MacOS Cache
+.DS_Store
+
+# Dear ImGui config file
+**/imgui.ini
+
+# build output
+output/**
